@@ -141,6 +141,64 @@ game.phase = "DaY"
 
 }
 
+startVoting(game){
+ 
+    if(game.phase !== "DAY"){
+        return;
+    }
+
+    game.votes = [];
+
+    game.phase = "VOTING";
+}
+
+
+submitVote(game, voterId, targetPlayerId){
+    const isVoter = game.players.find(
+        voter => voter.player === voterId
+    )
+
+    if(!isVoter){
+        return
+    }
+
+    if(!isVoter.alive){
+        return
+    }
+
+    if(game.phase !== "VOTING"){
+        return;
+    }
+
+    const target = game.players.find(
+        target => target.playerId === targetPlayerId
+    )
+
+    if(!target  || !target.alive ){
+        return;
+    }
+
+const existingVote = game.votes.find(
+    vote => vote.voterId === voterId
+)
+
+
+if(existingVote){
+    return
+}
+
+
+const vote = {
+    voterId:voterId,
+    targetPlayerId:targetPlayerId,
+    round:game.round
+}
+
+game.votes.push(vote);
+
+}
+ 
+
 }
 
 module.exports = GameEngine;
