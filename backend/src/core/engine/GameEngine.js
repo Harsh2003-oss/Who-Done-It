@@ -41,6 +41,67 @@ game.round = 1;
    
     }
 
+submitNightAction(game, playerId, action, targetPlayerId) {
+
+    // 1. Find the player
+    const player = game.players.find(
+        player => player.playerId === playerId
+    );
+
+    // 2. Player must exist
+    if (!player) {
+        return;
+    }
+
+    // 3. Player must be alive
+    if (!player.alive) {
+        return;
+    }
+
+    // 4. Game must currently be in NIGHT phase
+    if (game.phase !== "NIGHT") {
+        return;
+    }
+
+    // Check whether the player's role allows the action
+    if (player.role === "MAFIA" && action !== "KILL") {
+        return;
+    }
+
+    if (player.role === "DOCTOR" && action !== "SAVE") {
+        return;
+    }
+
+    if (player.role === "VILLAGER") {
+        return;
+    }
+
+    const targetPlayer = game.players.find(
+        player => player.playerId === playerId
+    )
+
+    if(!targetPlayer){
+        return;
+    }
+
+    if(!targetPlayer.alive){
+        return
+    }
+
+    const nightAction = {
+        playerId: playerId,
+        action: action,
+        targetPlayerId: targetPlayerId,
+        round: game.round
+    };
+
+    // 10. Store the action
+    game.nightActions.push(nightAction);
+
+    return nightAction;
+
+}
+
 }
 
 module.exports = GameEngine;
