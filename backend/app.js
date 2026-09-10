@@ -12,6 +12,10 @@ const game = engine.createGame();
 engine.addPlayer(game, "Rahul");
 engine.addPlayer(game, "Priya");
 engine.addPlayer(game, "Aman");
+engine.addPlayer(game,'Harsh')
+engine.addPlayer(game,"Aayush")
+
+engine.startGame(game);
 
 console.log(game);
 
