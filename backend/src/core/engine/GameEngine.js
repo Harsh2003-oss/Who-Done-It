@@ -102,6 +102,45 @@ submitNightAction(game, playerId, action, targetPlayerId) {
 
 }
 
+resolveNight(game){
+    const killActions = game.nightActions.filter(
+        action => action.action === "KILL"
+    )
+
+    if(killActions.length===0){
+        game.phase = "DAY";
+        return
+    }
+
+    const saveAction = game.nightActions.find(
+        action => action.action === "SAVE"
+    )
+
+actions.forEach(kill => {
+    const targetPlayer = game.players.find(
+        player => player.playerId === kill.targetPlayerId
+    )
+})
+
+if(!targetPlayer){
+    return
+}
+
+if(
+    saveAction && saveAction.targetPlayerId === kill.targetPlayerId
+){
+    return
+}
+
+targetPlayer.alive = false;
+
+
+game.nightActions = []
+
+game.phase = "DaY"
+
+}
+
 }
 
 module.exports = GameEngine;
