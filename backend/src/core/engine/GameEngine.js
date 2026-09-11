@@ -17,7 +17,7 @@ class GameEngine {
             return;
         }
 
-        if (game.players.length >= 5) {
+         if (game.players.length >= 5) {
             return;
         }
 
@@ -29,9 +29,11 @@ class GameEngine {
             connected: false
         };
 
-        game.players.push(player);
+        game.players.push(player);      
 
         return player;
+
+         
     }
 
     startGame(game) {
