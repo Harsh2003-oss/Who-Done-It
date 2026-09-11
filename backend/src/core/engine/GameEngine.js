@@ -1,293 +1,518 @@
 const GameState = require("../state/GameState");
-const crypto = require('crypto');
-
+const crypto = require("crypto");
 
 class GameEngine {
 
+    // -----------------------------------
+    // Create a new game
+    // -----------------------------------
     createGame() {
         const game = new GameState();
+
+        game.gameId = crypto.randomUUID();
 
         return game;
     }
 
-    addPlayer(game,username){
-        const player = {
-            playerId: crypto.randomUUID() ,
-             username: username,
-        role: null,
-        alive: true,
-        connected: false
+
+    // -----------------------------------
+    // Add a player to the game
+    // -----------------------------------
+    addPlayer(game, username) {
+
+        if (!username) {
+            return;
         }
+
+        // V1: maximum 5 players
+        if (game.players.length >= 5) {
+            return;
+        }
+
+        const player = {
+            playerId: crypto.randomUUID(),
+            username: username,
+            role: null,
+            alive: true,
+            connected: false
+        };
 
         game.players.push(player);
+
+        return player;
     }
 
-    startGame(game){
-        const role = ["MAFIA", "MAFIA", "DOCTOR", "VILLAGER", "VILLAGER"];
-   
-        for(let i=role.length-1;i>=0;i--){
-const j = Math.floor(Math.random() * (i+1));
 
-[role[i] ,role[j] = role[j] ,role[i]]
+    // -----------------------------------
+    // Start the game
+    // -----------------------------------
+    startGame(game) {
 
-game.players[i].role = role[i];
-
-
+        // V1 requires exactly 5 players
+        if (game.players.length !== 5) {
+            return;
         }
+
+        const roles = [
+            "MAFIA",
+            "MAFIA",
+            "DOCTOR",
+            "VILLAGER",
+            "VILLAGER"
+        ];
+
+
+        // Fisher-Yates shuffle
+        for (let i = roles.length - 1; i > 0; i--) {
+
+            const j = Math.floor(Math.random() * (i + 1));
+
+            [roles[i], roles[j]] = [roles[j], roles[i]];
+        }
+
+
+        // Assign roles
+        for (let i = 0; i < game.players.length; i++) {
+            game.players[i].role = roles[i];
+        }
+
 
         game.status = "RUNNING";
-game.phase = "NIGHT";
-game.round = 1;
-   
-    }
-
-submitNightAction(game, playerId, action, targetPlayerId) {
-
-    // 1. Find the player
-    const player = game.players.find(
-        player => player.playerId === playerId
-    );
-
-    // 2. Player must exist
-    if (!player) {
-        return;
-    }
-
-    // 3. Player must be alive
-    if (!player.alive) {
-        return;
-    }
-
-    // 4. Game must currently be in NIGHT phase
-    if (game.phase !== "NIGHT") {
-        return;
-    }
-
-    // Check whether the player's role allows the action
-    if (player.role === "MAFIA" && action !== "KILL") {
-        return;
-    }
-
-    if (player.role === "DOCTOR" && action !== "SAVE") {
-        return;
-    }
-
-    if (player.role === "VILLAGER") {
-        return;
-    }
-
-    const targetPlayer = game.players.find(
-        player => player.playerId === playerId
-    )
-
-    if(!targetPlayer){
-        return;
-    }
-
-    if(!targetPlayer.alive){
-        return
-    }
-
-    const nightAction = {
-        playerId: playerId,
-        action: action,
-        targetPlayerId: targetPlayerId,
-        round: game.round
-    };
-
-    // 10. Store the action
-    game.nightActions.push(nightAction);
-
-    return nightAction;
-
-}
-
-resolveNight(game){
-    const killActions = game.nightActions.filter(
-        action => action.action === "KILL"
-    )
-
-    if(killActions.length===0){
-        game.phase = "DAY";
-        return
-    }
-
-    const saveAction = game.nightActions.find(
-        action => action.action === "SAVE"
-    )
-
-actions.forEach(kill => {
-    const targetPlayer = game.players.find(
-        player => player.playerId === kill.targetPlayerId
-    )
-})
-
-if(!targetPlayer){
-    return
-}
-
-if(
-    saveAction && saveAction.targetPlayerId === kill.targetPlayerId
-){
-    return
-}
-
-targetPlayer.alive = false;
-
-
-game.nightActions = []
-
-game.phase = "DaY"
-
-}
-
-startVoting(game){
- 
-    if(game.phase !== "DAY"){
-        return;
-    }
-
-    game.votes = [];
-
-    game.phase = "VOTING";
-}
-
-
-submitVote(game, voterId, targetPlayerId){
-    const isVoter = game.players.find(
-        voter => voter.player === voterId
-    )
-
-    if(!isVoter){
-        return
-    }
-
-    if(!isVoter.alive){
-        return
-    }
-
-    if(game.phase !== "VOTING"){
-        return;
-    }
-
-    const target = game.players.find(
-        target => target.playerId === targetPlayerId
-    )
-
-    if(!target  || !target.alive ){
-        return;
-    }
-
-const existingVote = game.votes.find(
-    vote => vote.voterId === voterId
-)
-
-
-if(existingVote){
-    return
-}
-
-
-const vote = {
-    voterId:voterId,
-    targetPlayerId:targetPlayerId,
-    round:game.round
-}
-
-game.votes.push(vote);
-
-}
-
-
-resolveVotes(game) {
-
-    if (game.phase !== "VOTING") {
-        return;
-    }
-
-    const voteCounts = {};
-
-    // Count votes
-    for (const vote of game.votes) {
-
-        if (!voteCounts[vote.targetPlayerId]) {
-            voteCounts[vote.targetPlayerId] = 0;
-        }
-
-        voteCounts[vote.targetPlayerId]++;
-    }
-
-    // No votes
-    if (Object.keys(voteCounts).length === 0) {
-        game.votes = [];
         game.phase = "NIGHT";
-        game.round++;
-        return;
+        game.round = 1;
+
+        return game;
     }
 
-    // Find player with highest votes
-    let eliminatedPlayerId = null;
-    let highestVotes = 0;
 
-    for (const playerId in voteCounts) {
+    // -----------------------------------
+    // Submit a night action
+    // -----------------------------------
+    submitNightAction(game, playerId, action, targetPlayerId) {
 
-        if (voteCounts[playerId] > highestVotes) {
-            highestVotes = voteCounts[playerId];
-            eliminatedPlayerId = playerId;
+        // 1. Game must be in NIGHT phase
+        if (game.phase !== "NIGHT") {
+            return;
         }
+
+
+        // 2. Find the player performing the action
+        const player = game.players.find(
+            player => player.playerId === playerId
+        );
+
+
+        // 3. Player must exist
+        if (!player) {
+            return;
+        }
+
+
+        // 4. Player must be alive
+        if (!player.alive) {
+            return;
+        }
+
+
+        // 5. Check whether player has already submitted
+        // an action this night
+        const existingAction = game.nightActions.find(
+            action => action.playerId === playerId
+        );
+
+        if (existingAction) {
+            return;
+        }
+
+
+        // 6. Check whether the role allows the action
+
+        if (player.role === "MAFIA" && action !== "KILL") {
+            return;
+        }
+
+        if (player.role === "DOCTOR" && action !== "SAVE") {
+            return;
+        }
+
+        // Villagers don't have night actions
+        if (player.role === "VILLAGER") {
+            return;
+        }
+
+
+        // 7. Find target
+        const targetPlayer = game.players.find(
+            player => player.playerId === targetPlayerId
+        );
+
+
+        // 8. Target must exist
+        if (!targetPlayer) {
+            return;
+        }
+
+
+        // 9. Target must be alive
+        if (!targetPlayer.alive) {
+            return;
+        }
+
+
+        // 10. Create action
+        const nightAction = {
+            playerId: playerId,
+            action: action,
+            targetPlayerId: targetPlayerId,
+            round: game.round
+        };
+
+
+        // 11. Store action
+        game.nightActions.push(nightAction);
+
+        return nightAction;
     }
 
-    // Find eliminated player
-    const eliminatedPlayer = game.players.find(
-        player => player.playerId === eliminatedPlayerId
-    );
 
-    if (eliminatedPlayer) {
-        eliminatedPlayer.alive = false;
+    // -----------------------------------
+    // Resolve night actions
+    // -----------------------------------
+    resolveNight(game) {
+
+        if (game.phase !== "NIGHT") {
+            return;
+        }
+
+
+        // Find all Mafia kill actions
+        const killActions = game.nightActions.filter(
+            action => action.action === "KILL"
+        );
+
+
+        // Find Doctor save action
+        const saveAction = game.nightActions.find(
+            action => action.action === "SAVE"
+        );
+
+
+        // Resolve every Mafia kill
+        killActions.forEach(kill => {
+
+            const targetPlayer = game.players.find(
+                player => player.playerId === kill.targetPlayerId
+            );
+
+
+            // Target doesn't exist
+            if (!targetPlayer) {
+                return;
+            }
+
+
+            // Target was saved by Doctor
+            if (
+                saveAction &&
+                saveAction.targetPlayerId === kill.targetPlayerId
+            ) {
+                return;
+            }
+
+
+            // Kill target
+            targetPlayer.alive = false;
+        });
+
+
+        // Clear night actions
+        game.nightActions = [];
+
+
+        // Check whether someone has won
+        const winner = this.checkWinCondition(game);
+
+        if (winner) {
+            return;
+        }
+
+
+        // Move to DAY
+        game.phase = "DAY";
+
+        return game;
     }
 
-    // Clear votes
-    game.votes = [];
 
-    // Move to next round
-    game.round++;
-    game.phase = "NIGHT";
-} 
+    // -----------------------------------
+    // Start voting
+    // -----------------------------------
+    startVoting(game) {
 
-checkWinCondition(game) {
+        if (game.phase !== "DAY") {
+            return;
+        }
 
-    // Find alive Mafia
-    const aliveMafia = game.players.filter(
-        player => player.role === "MAFIA" && player.alive
-    );
 
-    // Find alive Town players
-    const aliveTown = game.players.filter(
-        player => player.role !== "MAFIA" && player.alive
-    );
+        // Clear previous votes
+        game.votes = [];
 
-    // Town wins if no Mafia are alive
-    if (aliveMafia.length === 0) {
-        game.status = "FINISHED";
-        game.phase = "GAME_OVER";
-        game.winner = "TOWN";
 
-        return "TOWN";
+        // Move to voting
+        game.phase = "VOTING";
+
+        return game;
     }
 
-    // Mafia wins if Mafia >= Town
-    if (aliveMafia.length >= aliveTown.length) {
-        game.status = "FINISHED";
-        game.phase = "GAME_OVER";
-        game.winner = "MAFIA";
 
-        return "MAFIA";
+    // -----------------------------------
+    // Submit a vote
+    // -----------------------------------
+    submitVote(game, voterId, targetPlayerId) {
+
+        // Game must be in voting phase
+        if (game.phase !== "VOTING") {
+            return;
+        }
+
+
+        // Find voter
+        const voter = game.players.find(
+            player => player.playerId === voterId
+        );
+
+
+        // Voter must exist
+        if (!voter) {
+            return;
+        }
+
+
+        // Voter must be alive
+        if (!voter.alive) {
+            return;
+        }
+
+
+        // Find target
+        const target = game.players.find(
+            player => player.playerId === targetPlayerId
+        );
+
+
+        // Target must exist and be alive
+        if (!target || !target.alive) {
+            return;
+        }
+
+
+        // Player can vote only once
+        const existingVote = game.votes.find(
+            vote => vote.voterId === voterId
+        );
+
+
+        if (existingVote) {
+            return;
+        }
+
+
+        // Create vote
+        const vote = {
+            voterId: voterId,
+            targetPlayerId: targetPlayerId,
+            round: game.round
+        };
+
+
+        // Store vote
+        game.votes.push(vote);
+
+        return vote;
     }
 
-    // Game continues
-    return null;
+
+    // -----------------------------------
+    // Resolve votes
+    // -----------------------------------
+    resolveVotes(game) {
+
+        if (game.phase !== "VOTING") {
+            return;
+        }
+
+
+        const voteCounts = {};
+
+
+        // -----------------------------------
+        // Count votes
+        // -----------------------------------
+        for (const vote of game.votes) {
+
+            if (!voteCounts[vote.targetPlayerId]) {
+                voteCounts[vote.targetPlayerId] = 0;
+            }
+
+            voteCounts[vote.targetPlayerId]++;
+        }
+
+
+        // -----------------------------------
+        // No votes
+        // -----------------------------------
+        if (Object.keys(voteCounts).length === 0) {
+
+            game.votes = [];
+
+            game.round++;
+
+            game.phase = "NIGHT";
+
+            return game;
+        }
+
+
+        // -----------------------------------
+        // Find highest vote count
+        // -----------------------------------
+        let highestVotes = 0;
+
+        for (const playerId in voteCounts) {
+
+            if (voteCounts[playerId] > highestVotes) {
+                highestVotes = voteCounts[playerId];
+            }
+        }
+
+
+        // -----------------------------------
+        // Find everyone with highest votes
+        // -----------------------------------
+        const playersWithHighestVotes = [];
+
+        for (const playerId in voteCounts) {
+
+            if (voteCounts[playerId] === highestVotes) {
+                playersWithHighestVotes.push(playerId);
+            }
+        }
+
+
+        // -----------------------------------
+        // Tie
+        // -----------------------------------
+        if (playersWithHighestVotes.length > 1) {
+
+            // Nobody is eliminated on a tie
+            game.votes = [];
+
+            game.round++;
+
+            game.phase = "NIGHT";
+
+            return game;
+        }
+
+
+        // -----------------------------------
+        // Eliminate player
+        // -----------------------------------
+        const eliminatedPlayerId = playersWithHighestVotes[0];
+
+
+        const eliminatedPlayer = game.players.find(
+            player => player.playerId === eliminatedPlayerId
+        );
+
+
+        if (eliminatedPlayer) {
+            eliminatedPlayer.alive = false;
+        }
+
+
+        // -----------------------------------
+        // Check winner
+        // -----------------------------------
+        const winner = this.checkWinCondition(game);
+
+        if (winner) {
+            game.votes = [];
+
+            return game;
+        }
+
+
+        // -----------------------------------
+        // Prepare next round
+        // -----------------------------------
+        game.votes = [];
+
+        game.round++;
+
+        game.phase = "NIGHT";
+
+        return game;
+    }
+
+
+    // -----------------------------------
+    // Check win condition
+    // -----------------------------------
+    checkWinCondition(game) {
+
+        // Find alive Mafia
+        const aliveMafia = game.players.filter(
+            player =>
+                player.role === "MAFIA" &&
+                player.alive
+        );
+
+
+        // Find alive Town players
+        const aliveTown = game.players.filter(
+            player =>
+                player.role !== "MAFIA" &&
+                player.alive
+        );
+
+
+        // -----------------------------------
+        // Town wins
+        // -----------------------------------
+        if (aliveMafia.length === 0) {
+
+            game.status = "FINISHED";
+
+            game.phase = "GAME_OVER";
+
+            game.winner = "TOWN";
+
+            return "TOWN";
+        }
+
+
+        // -----------------------------------
+        // Mafia wins
+        // -----------------------------------
+        if (aliveMafia.length >= aliveTown.length) {
+
+            game.status = "FINISHED";
+
+            game.phase = "GAME_OVER";
+
+            game.winner = "MAFIA";
+
+            return "MAFIA";
+        }
+
+
+        // -----------------------------------
+        // Game continues
+        // -----------------------------------
+        return null;
+    }
 }
 
-}
 
 module.exports = GameEngine;
