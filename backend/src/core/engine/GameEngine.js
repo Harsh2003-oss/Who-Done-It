@@ -197,7 +197,96 @@ const vote = {
 game.votes.push(vote);
 
 }
- 
+
+
+resolveVotes(game) {
+
+    if (game.phase !== "VOTING") {
+        return;
+    }
+
+    const voteCounts = {};
+
+    // Count votes
+    for (const vote of game.votes) {
+
+        if (!voteCounts[vote.targetPlayerId]) {
+            voteCounts[vote.targetPlayerId] = 0;
+        }
+
+        voteCounts[vote.targetPlayerId]++;
+    }
+
+    // No votes
+    if (Object.keys(voteCounts).length === 0) {
+        game.votes = [];
+        game.phase = "NIGHT";
+        game.round++;
+        return;
+    }
+
+    // Find player with highest votes
+    let eliminatedPlayerId = null;
+    let highestVotes = 0;
+
+    for (const playerId in voteCounts) {
+
+        if (voteCounts[playerId] > highestVotes) {
+            highestVotes = voteCounts[playerId];
+            eliminatedPlayerId = playerId;
+        }
+    }
+
+    // Find eliminated player
+    const eliminatedPlayer = game.players.find(
+        player => player.playerId === eliminatedPlayerId
+    );
+
+    if (eliminatedPlayer) {
+        eliminatedPlayer.alive = false;
+    }
+
+    // Clear votes
+    game.votes = [];
+
+    // Move to next round
+    game.round++;
+    game.phase = "NIGHT";
+} 
+
+checkWinCondition(game) {
+
+    // Find alive Mafia
+    const aliveMafia = game.players.filter(
+        player => player.role === "MAFIA" && player.alive
+    );
+
+    // Find alive Town players
+    const aliveTown = game.players.filter(
+        player => player.role !== "MAFIA" && player.alive
+    );
+
+    // Town wins if no Mafia are alive
+    if (aliveMafia.length === 0) {
+        game.status = "FINISHED";
+        game.phase = "GAME_OVER";
+        game.winner = "TOWN";
+
+        return "TOWN";
+    }
+
+    // Mafia wins if Mafia >= Town
+    if (aliveMafia.length >= aliveTown.length) {
+        game.status = "FINISHED";
+        game.phase = "GAME_OVER";
+        game.winner = "MAFIA";
+
+        return "MAFIA";
+    }
+
+    // Game continues
+    return null;
+}
 
 }
 
