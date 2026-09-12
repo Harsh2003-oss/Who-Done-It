@@ -14,10 +14,23 @@ const io = new Server(server,{
 
 // --- Socket.io Event Handling Pipeline ---
 
-io.on('connection',(Socket) =>{
+io.on('connection',(socket) =>{
     console.log("new connection established")
 
-    Socket.on('disconnect',() =>{
+socket.on("room:join",(data) => {
+    const roomId = data.roomId;
+    const username = data.username;
+
+    socket.join(roomId);
+
+
+    io.to(roomId).emit("room:update",{
+        message :`${username} joined the room`
+    })
+
+})
+
+    socket.on('disconnect',() =>{
         console.log("user disconnected")
     })
 })
