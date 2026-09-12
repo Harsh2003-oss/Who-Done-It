@@ -38,14 +38,22 @@ games[roomId] = engine.createGame();
 
 const player = engine.addPlayer(game,username);    
 
-if(player){
-    player.socketId = socket.id;
+if (!player) {
+    console.log("Player could not be added");
+    return;
+}
+
+player.socketId = socket.id;
 player.connected = true;
+
+if (game.players.length === 1) {
+    game.hostPlayerId = player.playerId;
 }
 
 socket.emit("room:joined", {
     roomId,
-    player
+    player,
+    isHost: game.hostPlayerId === player.playerId
 });
 
     console.log(`${username} joined room ${roomId}`);

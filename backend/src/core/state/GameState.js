@@ -10,6 +10,8 @@ class GameState {
         this.votes = [];
 
         this.winner = null;
+
+        this.hostPlayerId = null;
     }
 }
 
