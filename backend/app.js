@@ -5,6 +5,14 @@ const server = http.createServer(app);
 
 const {Server} = require("socket.io");
 
+const PORT = 3000;
+const GameEngine = require("./src/core/engine/GameEngine");
+
+const engine = new GameEngine();
+
+const games = {};
+
+
 const io = new Server(server,{
     cors:{
         origin:"*",
@@ -21,11 +29,33 @@ socket.on("room:join",(data) => {
     const roomId = data.roomId;
     const username = data.username;
 
+
+    if(!games[roomId]){
+games[roomId] = engine.createGame();
+    }
+
+    const game = games[roomId]
+
+const player = engine.addPlayer(game,username);    
+
+if(player){
+    player.socketId = socket.id;
+player.connected = true;
+}
+
+socket.emit("room:joined", {
+    roomId,
+    player
+});
+
+    console.log(`${username} joined room ${roomId}`);
+
     socket.join(roomId);
 
 
     io.to(roomId).emit("room:update",{
-        message :`${username} joined the room`
+        message :`${username} joined the room`,
+        players:game.players
     })
 
 })
@@ -36,23 +66,10 @@ socket.on("room:join",(data) => {
 })
 
 
-
-const PORT = 3000;
-const GameEngine = require("./src/core/engine/GameEngine");
-
-const engine = new GameEngine();
-
-const game = engine.createGame();
-
-
-engine.addPlayer(game, "Rahul");
-engine.addPlayer(game, "Priya");
-engine.addPlayer(game, "Aman");
-engine.addPlayer(game,'Harsh')
-engine.addPlayer(game,"Aayush")
-
-engine.startGame(game);
-
+app.get("/try", (req, res) => {
+        console.log("GET /try received");
+    res.send("GET request is working");
+});
 
 app.post('/try',(req,res)=>{
 console.log("recieved")
