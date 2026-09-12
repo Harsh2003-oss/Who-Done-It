@@ -29,6 +29,7 @@ socket.on("room:join",(data) => {
     const roomId = data.roomId;
     const username = data.username;
 
+    
 
     if(!games[roomId]){
 games[roomId] = engine.createGame();
@@ -45,6 +46,9 @@ if (!player) {
 
 player.socketId = socket.id;
 player.connected = true;
+
+socket.data.roomId = roomId;
+socket.data.playerId = player.playerId;
 
 if (game.players.length === 1) {
     game.hostPlayerId = player.playerId;
@@ -66,6 +70,56 @@ socket.emit("room:joined", {
         players:game.players
     })
 
+})
+
+socket.on("game:start",() =>{
+
+    const roomId = socket.data.roomId;
+    const playerId = socket.data.playerId;
+
+    const game = games[roomId];
+
+    if(!game){
+        console.log("Game not found");
+        return
+    }
+
+    const player = game.players.find(
+        player => player.playerId === playerId
+    )
+
+    if(!player){
+        console.log("Player nto found")
+        return
+    }
+
+    const isHost = game.hostPlayerId === player.playerId;
+
+    if(!isHost){
+        console.log("only host can start")
+        return
+    }
+
+    if(game.players.length!==5){
+          console.log("Exactly 5 players are required");
+        return;
+    }
+
+
+    if (game.status !== "LOBBY") {
+        console.log("Game has already started");
+        return;
+    }
+
+    const startedGame = engine.startGame(game)
+
+   
+
+    io.to(roomId).emit("game:started",{
+        game:startedGame
+    })
+
+        console.log(`Game started in room ${roomId}`);
 })
 
     socket.on('disconnect',() =>{

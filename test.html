@@ -7,39 +7,60 @@
 
     <h1>Socket.IO Test</h1>
 
+    <button id="start-game">Start Game</button>
+
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
+    <script>
+        const socket = io("http://localhost:3000");
 
-<script>
-    const socket = io("http://localhost:3000");
+        socket.on("connect", () => {
+            console.log("Connected to server");
+            console.log("Socket ID:", socket.id);
 
-    socket.on("connect", () => {
-        console.log("Connected to server");
-        console.log("Socket ID:", socket.id);
+            const username = prompt("Enter your username:");
 
-   const username = prompt("Enter your username:");
+            if (!username) {
+                console.log("Username was not entered");
+                return;
+            }
 
-socket.emit("room:join", {
-    roomId: "ABC123",
-    username: username
-});
-    });
+            socket.emit("room:join", {
+                roomId: "ABC123",
+                username: username
+            });
+        });
 
-    socket.on("room:update", (data) => {
-     console.log("Room update:", data.message);
-    console.log("Players in room:", data.players);
-     console.log("Total players:", data.players.length);
-    });
+        socket.on("room:update", (data) => {
+            console.log("Room update:", data.message);
+            console.log("Players in room:", data.players);
+            console.log("Total players:", data.players.length);
+        });
 
-    socket.on("room:joined", (data) => {
-    console.log("Successfully joined room:", data.roomId);
-    console.log("My player information:", data.player);
-    console.log("Am I host?", data.isHost);
-});
+        socket.on("room:joined", (data) => {
+            console.log("Successfully joined room:", data.roomId);
+            console.log("My player information:", data.player);
+            console.log("Am I host?", data.isHost);
+        });
 
-    socket.on("disconnect", () => {
-        console.log("Disconnected from server");
-    });
-</script>
+        document.getElementById("start-game").addEventListener("click", () => {
+            console.log("Start button clicked");
+            socket.emit("game:start");
+        });
+
+        socket.on("game:started", (data) => {
+            console.log("Game started:", data.game);
+                console.log("Players after role assignment:", data.game.players);
+        });
+
+        socket.on("disconnect", () => {
+            console.log("Disconnected from server");
+        });
+
+        socket.on("connect_error", (error) => {
+            console.error("Connection error:", error);
+        });
+    </script>
+
 </body>
 </html>
