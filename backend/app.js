@@ -114,10 +114,21 @@ socket.on("game:start",() =>{
     const startedGame = engine.startGame(game)
 
    
+const publicGame = engine.getPublicGameState(startedGame);
 
-    io.to(roomId).emit("game:started",{
-        game:startedGame
-    })
+
+io.to(roomId).emit("game:started", {
+    game: publicGame
+});
+
+
+for (const player of startedGame.players) {
+    io.to(player.socketId).emit("role:assigned", {
+        playerId: player.playerId,
+        role: player.role
+    });
+}
+
 
         console.log(`Game started in room ${roomId}`);
 })

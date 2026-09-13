@@ -1,5 +1,7 @@
+const { connect } = require("http2");
 const GameState = require("../state/GameState");
 const crypto = require("crypto");
+const { connected } = require("process");
 
 class GameEngine {
 
@@ -347,6 +349,23 @@ class GameEngine {
 
         return null;
     }
+
+    getPublicGameState(game){
+        return{
+            gameId:game.gameId,
+            status:game.status,
+            phase:game.phase,
+            round:game.round,
+            winner:game.winner,
+            players:game.players.map(player => ({
+                playerId:player.playerId,
+                username:player.username,
+                alive:player.alive,
+                connected:player.connected
+            }))
+        }
+    }
+
 }
 
 module.exports = GameEngine;
