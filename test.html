@@ -9,6 +9,8 @@
 
     <button id="start-game">Start Game</button>
 
+    <button id="kill-player">Submit Kill</button>
+
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
     <script>
@@ -60,6 +62,20 @@
         socket.on("connect_error", (error) => {
             console.error("Connection error:", error);
         });
+
+socket.on("role:assigned", (data) => {
+    console.log("PRIVATE ROLE EVENT RECEIVED");
+    console.log("My player ID:", data.playerId);
+    console.log("My private role:", data.role);
+});
+
+document.getElementById("kill-player").addEventListener("click", () => {
+    socket.emit("night:action", {
+        action: "KILL",
+        targetPlayerId: "PUT_ANOTHER_PLAYER_ID_HERE"
+    });
+});
+
     </script>
 
 </body>
