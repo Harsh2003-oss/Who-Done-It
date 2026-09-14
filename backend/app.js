@@ -72,6 +72,39 @@ socket.emit("room:joined", {
 
 })
 
+
+    socket.on("night:action",(data)=>{
+        const roomId = socket.data.roomId;
+        const playerId = socket.data.playerId;
+
+        const game = games[roomId];
+
+        if(!game){
+            console.log("game not  found")
+        return
+        }
+
+        const action = data.action;
+        const targetPlayerId = data.targetPlayerId;
+
+        const result = engine.submitNightAction(
+            game,
+            playerId,
+            action,
+            targetPlayerId
+        )
+
+if(!result){
+    console.log("night action rejected")
+    return;
+}
+
+
+console.log("night action accepted:", result)
+
+    })
+
+
 socket.on("game:start",() =>{
 
     const roomId = socket.data.roomId;
