@@ -70,40 +70,91 @@ socket.emit("room:joined", {
         players:game.players
     })
 
+    
+socket.on("night:resolve", () => {
+    const roomId = socket.data.roomId;
+    const playerId = socket.data.playerId;
+
+    const game = games[roomId];
+
+    if (!game) {
+        console.log("Game not found");
+        return;
+    }
+
+    const player = game.players.find(
+        player => player.playerId === playerId
+    );
+
+    if (!player) {
+        console.log("Player not found");
+        return;
+    }
+
+    if (game.hostPlayerId !== playerId) {
+        console.log("Only the host can resolve the night");
+        return;
+    }
+
+    if (game.phase !== "NIGHT") {
+        console.log("Night cannot be resolved during:", game.phase);
+        return;
+    }
+
+    const resolvedGame = engine.resolveNight(game);
+
+    if (!resolvedGame) {
+        console.log("Night resolution failed");
+        return;
+    }
+
+    console.log("Night resolved:", resolvedGame);
+
+    const publicGame = engine.getPublicGameState(resolvedGame);
+
+    io.to(roomId).emit("night:resolved", {
+        game: publicGame
+    });
+});
 })
 
 
-    socket.on("night:action",(data)=>{
-        const roomId = socket.data.roomId;
-        const playerId = socket.data.playerId;
+ socket.on("night:action", (data) => {
+    const roomId = socket.data.roomId;
+    const playerId = socket.data.playerId;
 
-        const game = games[roomId];
+    const game = games[roomId];
 
-        if(!game){
-            console.log("game not  found")
-        return
-        }
+    if (!game) {
+        console.log("Game not found");
+        return;
+    }
 
-        const action = data.action;
-        const targetPlayerId = data.targetPlayerId;
+    console.log("Night action received:", data);
+    console.log("Socket player ID:", playerId);
+    console.log("Current phase:", game.phase);
 
-        const result = engine.submitNightAction(
-            game,
-            playerId,
-            action,
-            targetPlayerId
-        )
+    const actingPlayer = game.players.find(
+        player => player.playerId === playerId
+    );
 
-if(!result){
-    console.log("night action rejected")
-    return;
-}
+    console.log("Acting player:", actingPlayer);
+    console.log("All players:", game.players);
 
+    const result = engine.submitNightAction(
+        game,
+        playerId,
+        data.action,
+        data.targetPlayerId
+    );
 
-console.log("night action accepted:", result)
+    if (!result) {
+        console.log("night action rejected");
+        return;
+    }
 
-    })
-
+    console.log("night action accepted:", result);
+});
 
 socket.on("game:start",() =>{
 

@@ -9,11 +9,26 @@
 
     <button id="start-game">Start Game</button>
 
-    <button id="kill-player">Submit Kill</button>
+    <label for="kill-target">Choose a player to kill:</label>
+
+<select id="kill-target">
+    <option value="">Select player</option>
+</select>
+
+<button id="kill-player">Submit Kill</button>
+
+
+    <button id="resolve-night">Resolve Night</button>
 
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
+   
+
+
     <script>
+
+let currentGame = null;
+
         const socket = io("http://localhost:3000");
 
         socket.on("connect", () => {
@@ -51,9 +66,14 @@
         });
 
         socket.on("game:started", (data) => {
-            console.log("Game started:", data.game);
-                console.log("Players after role assignment:", data.game.players);
-        });
+    console.log("Game started:", data.game);
+
+    currentGame = data.game;
+
+    console.log("Players:", currentGame.players);
+
+    updateTargetDropdown();
+});
 
         socket.on("disconnect", () => {
             console.log("Disconnected from server");
@@ -69,12 +89,61 @@ socket.on("role:assigned", (data) => {
     console.log("My private role:", data.role);
 });
 
+document.getElementById("resolve-night").addEventListener("click", () => {
+    console.log("Resolve Night clicked");
+    socket.emit("night:resolve");
+});
+
+socket.on("night:resolved", (data) => {
+    console.log("Night resolved by server");
+
+    currentGame = data.game;
+
+    console.log("Updated game:", currentGame);
+    console.log("Current phase:", currentGame.phase);
+
+    updateTargetDropdown();
+});
+
 document.getElementById("kill-player").addEventListener("click", () => {
+    const targetPlayerId = document.getElementById("kill-target").value;
+
+    if (!targetPlayerId) {
+        console.log("Please select a player");
+        return;
+    }
+
     socket.emit("night:action", {
         action: "KILL",
-        targetPlayerId: "PUT_ANOTHER_PLAYER_ID_HERE"
+        targetPlayerId: targetPlayerId
     });
 });
+
+
+function updateTargetDropdown() {
+    const targetSelect = document.getElementById("kill-target");
+
+    targetSelect.innerHTML = `
+        <option value="">Select player</option>
+    `;
+
+    if (!currentGame) {
+        return;
+    }
+
+    currentGame.players.forEach((player) => {
+        const option = document.createElement("option");
+
+        option.value = player.playerId;
+        option.textContent = `${player.username} (${player.alive ? "Alive" : "Dead"})`;
+
+        if (!player.alive) {
+            option.disabled = true;
+        }
+
+        targetSelect.appendChild(option);
+    });
+}
 
     </script>
 
